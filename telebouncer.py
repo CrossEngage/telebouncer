@@ -71,7 +71,7 @@ conn.close()
 
 hostname = socket.gethostname()
 
-measurement = 'pgbouncer'
+measurement = 'pgbouncer' + '_' + qtype
 tag_set = ",".join(['hostname='+hostname, 'query='+qtype])
 
 for item in res:
