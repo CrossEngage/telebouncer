@@ -9,7 +9,6 @@ import socket
 queries = [
     'active_sockets',
     'clients',
-    'config',
     'databases',
     'fds',
     'lists',
@@ -19,6 +18,152 @@ queries = [
     'sockets',
     'stats',
 ]
+
+# A mapping for the columns of each query to assign them on the tag_set or field_set
+# This should be changed according to your needs
+mapping = {
+    'active_sockets': {
+        'type'         : 'tag',
+        'user'         : 'tag',
+        'database'     : 'tag',
+        'state'        : 'tag',
+        'addr'         : 'field',
+        'port'         : 'field',
+        'local_addr'   : 'field',
+        'local_port'   : 'field',
+        'connect_time' : 'field',
+        'request_time' : 'field',
+        'ptr'          : 'off',
+        'link'         : 'off',
+        'remote_pid'   : 'off',
+        'tls'          : 'off',
+        'recv_pos'     : 'field',
+        'pkt_pos'      : 'field',
+        'pkt_remain'   : 'field',
+        'send_pos'     : 'field',
+        'send_remain'  : 'field',
+        'pkt_avail'    : 'field',
+        'send_avail'   : 'field',
+    },
+    'clients': {
+        'type'         : 'tag',
+        'user'         : 'tag',
+        'database'     : 'tag',
+        'state'        : 'tag',
+        'database'     : 'tag',
+        'addr'         : 'field',
+        'port'         : 'field',
+        'local_addr'   : 'off',
+        'local_port'   : 'off',
+        'connect_time' : 'field',
+        'request_time' : 'field',
+        'ptr'          : 'off',
+        'link'         : 'off',
+        'remote_pid'   : 'off',
+        'tls'          : 'off',
+    },
+    'databases': {
+        'name'                : 'tag',
+        'host'                : 'field',
+        'port'                : 'field',
+        'database'            : 'tag',
+        'force_user'          : 'off',
+        'pool_size'           : 'field',
+        'reserve_pool'        : 'field',
+        'pool_mode'           : 'tag',
+        'max_connections'     : 'field',
+        'current_connections' : 'field',
+    },
+    'fds': {
+        'fd'              : 'tag',
+        'task'            : 'tag',
+        'user'            : 'tag',
+        'database'        : 'tag',
+        'addr'            : 'field',
+        'port'            : 'field',
+        'cancel'          : 'off',
+        'link'            : 'off',
+        'client_encoding' : 'off',
+        'std_strings'     : 'off',
+        'datestyle'       : 'off',
+        'timezone'        : 'field',
+        'password'        : 'off',
+    },
+    'lists': {
+        'list'  : 'tag',
+        'items' : 'field',
+    },
+    'mem': {
+        'name'     : 'tag',
+        'size'     : 'field',
+        'used'     : 'field',
+        'free'     : 'field',
+        'memtotal' : 'field',
+    },
+    'pools': {
+        'database'   : 'tag',
+        'user'       : 'tag',
+        'cl_active'  : 'field',
+        'cl_waiting' : 'field',
+        'sv_active'  : 'field',
+        'sv_idle'    : 'field',
+        'sv_used'    : 'field',
+        'sv_tested'  : 'field',
+        'sv_login'   : 'field',
+        'maxwait'    : 'field',
+        'pool_mode'  : 'tag',
+    },
+    'servers': {
+        'type'         : 'tag',
+        'user'         : 'tag',
+        'database'     : 'tag',
+        'state'        : 'tag',
+        'addr'         : 'field',
+        'port'         : 'field',
+        'local_addr'   : 'field',
+        'local_port'   : 'field',
+        'connect_time' : 'field',
+        'request_time' : 'field',
+        'ptr'          : 'off',
+        'link'         : 'off',
+        'remote_pid'   : 'off',
+        'tls'          : 'off',
+    },
+    'sockets': {
+        'type'         : 'tag',
+        'user'         : 'tag',
+        'database'     : 'tag',
+        'state'        : 'tag',
+        'addr'         : 'field',
+        'port'         : 'field',
+        'local_addr'   : 'field',
+        'local_port'   : 'field',
+        'connect_time' : 'field',
+        'request_time' : 'field',
+        'ptr'          : 'off',
+        'link'         : 'off',
+        'remote_pid'   : 'off',
+        'tls'          : 'off',
+        'recv_pos'     : 'field',
+        'pkt_pos'      : 'field',
+        'pkt_remain'   : 'field',
+        'send_pos'     : 'field',
+        'send_remain'  : 'field',
+        'pkt_avail'    : 'field',
+        'send_avail'   : 'field',
+    },
+    'stats': {
+        'database'         : 'tag',
+        'total_requests'   : 'field',
+        'total_received'   : 'field',
+        'total_sent'       : 'field',
+        'total_query_time' : 'field',
+        'avg_req'          : 'field',
+        'avg_recv'         : 'field',
+        'avg_sent'         : 'field',
+        'avg_query'        : 'field',
+    },
+}
 
 # host and port are optional as they have the defaults according to pgBouncer default installation values
 # username is required as it must be a valid user from either stats_user or admin_users from pgBouncer's settings
@@ -69,18 +214,29 @@ conn.close()
 # Desired output according to https://docs.influxdata.com/influxdb/v1.3/write_protocols/line_protocol_tutorial/
 # measurement,tag_set field_set
 
-hostname = socket.gethostname()
+server = socket.gethostname()
 
 measurement = 'pgbouncer' + '_' + qtype
-tag_set = ",".join(['hostname='+hostname, 'query='+qtype])
 
 for item in res:
-    mlist = []
+    # tlist is a list of "key=value" strings for the tag_set
+    # flist is a list of "key=value" string for the field_set
+    tlist = ['server='+server]
+    flist = []
     for k, v in item.items():
-        # Create a list for the metrics based on key=value
-        mlist.append("=".join([k, str(v)]) if isinstance(v, (int, float)) else "=".join([k, '"' + str(v) + '"']))
-    # Create the field_set joining the key=value items from the list on a single string
-    field_set = ",".join([kvitem for kvitem in mlist])
+        # Create two key=value lists: one for tag_set and one for field_set
+        if mapping[qtype][k] == 'tag':
+            # Goes to the tlist
+            tlist.append("=".join([k, str(v)]))
+        elif mapping[qtype][k] == 'field':
+            # Goes to the flist
+            flist.append("=".join([k, str(v)]) if isinstance(v, (int, float)) else "=".join([k, '"' + str(v) + '"']))
+        else:
+            # Ignore columns with 'off' on the mapping
+            continue
+    # Create the tag_set and field_set joining the "key=value" items from their respective lists
+    tag_set = ",".join([kvitem for kvitem in tlist])
+    field_set = ",".join([kvitem for kvitem in flist])
     # Merge it all together in one line
     output = ",".join([measurement, tag_set])
     output = " ".join([output, field_set])
