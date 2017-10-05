@@ -215,7 +215,7 @@ conn.close()
 
 server = socket.gethostname()
 
-measurement = 'pgbouncer' + '_' + qtype
+measurement = 'pgbouncer_' + qtype
 
 for item in res:
     # tlist is a list of "key=value" strings for the tag_set
